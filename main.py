@@ -25,7 +25,7 @@ def rotateDegrees(boxX, boxWidth, width = 864):
     # else:
     #     return 0 # 0
 
-#List of possible classifiers for GoPro recognition
+#List of possible classifiers from OpenCV Classifier human body recognition 
 classfiers = [
    "haarcascade_eye_tree_eyeglasses.xml" , #0
    "haarcascade_eye.xml" , #1
@@ -45,18 +45,22 @@ classfiers = [
    "haarcascade_smile.xml" , #15
    "haarcascade_upperbody.xml" #16
 ]
+
+#Assign classifier
 chosenClassifier = classfiers[8]
-#Path to classifier
-# cascPath varies based on local machine.  /usr/local/share/ is the main difference amongst machines
+
+#cascPath varies based on local machine.  /usr/local/share/ is the main difference amongst machines
 cascPath="/usr/local/share/opencv/haarcascades/" + chosenClassifier
+
+#Path to classifier
 bodyCascade = cv2.CascadeClassifier(cascPath)
 
-
+#Setting GoPro parameters
 gpCam = GoProCamera.GoPro()
 gpCam.gpControlSet(constants.Stream.BIT_RATE, constants.Stream.BitRate.B2_4Mbps)
 #gpCam.gpControlSet(constants.Stream.WINDOW_SIZE, constants.Stream.WindowSize.W480)
 
-#Read media buffer from udp port
+#Read media buffer from udp port 10000
 cap = cv2.VideoCapture("udp://127.0.0.1:10000")
 
 arduino = None
@@ -69,7 +73,7 @@ try:
     count = 0
 
     while True:
-        # Capture frame-by-frame
+        # Capture frame-by-frame from GoPro
         ret, frame = cap.read()
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -84,10 +88,12 @@ try:
         )
 
         count += 1
-
+        
         if len(bodies) > 0:
             (x,y,w,h) = sorted(bodies, key=lambda x: x[2], reverse=True)[0]
             averages.append(rotateDegrees(x, w))
+            
+            #OpenCV Recognition Rectangle
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
         if count > 10:
@@ -99,13 +105,15 @@ try:
         # Draw a rectangle around the bodies
         #for (x, y, w, h) in bodies:
         #    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        
+        
         # Display the resulting frame
         cv2.imshow("GoPro OpenCV", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # When everything is done, release the capture
+    # When everything is done, release the capture for both GoPro and Arduino
     cap.release()
     cv2.destroyAllWindows()
     arduino_servo.disconnect(arduino)
